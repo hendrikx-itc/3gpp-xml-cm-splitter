@@ -1,0 +1,20 @@
+[package]
+name = "topology-splitter"
+version = "1.0.0"
+authors = ["Hendrikx ITC <info@hendrikx-itc.nl>"]
+edition = "2018"
+description = "A tool for splitting Ericsson ENM topology files into node size chunks"
+license = "proprietary"
+
+[dependencies]
+quick-xml = "0.17"
+clap = "2.33.0"
+log = "0.4"
+env_logger = "0.7"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+chrono = "0.4"
+regex = "1.3"
+sha2 = "0.8"
+tee_readwrite = "0.1"
