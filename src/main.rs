@@ -33,6 +33,13 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("filter_element")
+                .short("fe")
+                .long("filter-element")
+                .help("The element that will be processed")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("INPUT")
                 .help("Sets the input file to use")
                 .required(true),
@@ -48,10 +55,11 @@ fn main() {
     info!("Using input file: {}", &file_path);
 
     let output_directory = matches.value_of("output_directory").unwrap_or("/tmp");
+    let filter_element = matches.value_of("filter_element").unwrap_or("/tmp");
 
     info!("Writing output to: {}", &output_directory);
 
-    let result = split_file(file_path, output_directory);
+    let result = split_file(file_path, output_directory, filter_element);
 
     match result {
         Ok(chunk_count) => info!("Done splitting into {} chunks", chunk_count),
@@ -59,7 +67,7 @@ fn main() {
     }
 }
 
-fn split_file(file_path: &str, output_directory: &str) -> Result<i64, String> {
+fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> Result<i64, String> {
     let mut chunk_count: i64 = 0;
 
     let mut f = File::open(&file_path)
@@ -99,19 +107,21 @@ fn split_file(file_path: &str, output_directory: &str) -> Result<i64, String> {
                                 if attr.key == b"id" {
                                     let v = attr.unescape_and_decode_value(&reader).unwrap();
 
-                                    info!("{}", &v);
-
-                                    let hash = process_chunk(
+                                    if v.trim() == filter_element {
+                                        info!("{}", &v);
+                                    
+                                        let hash = process_chunk(
                                         output_directory,
                                         &enb_context,
                                         &mut reader,
                                         v,
                                         timestamp,
-                                    )?;
+                                        )?;
 
-                                    chunk_count += 1;
+                                        chunk_count += 1;
 
-                                    println!("- {}", hash);
+                                        println!("- {}", hash);
+                                    }
                                 }
                             }
                         }
