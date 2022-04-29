@@ -84,7 +84,7 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
     let mut context_collected = false;
     let mut context: Vec<quick_xml::events::Event> = Vec::new();
 
-    'outer: loop {
+    loop {
         match reader.read_event(&mut buf) {
             Ok(e) => {
                 let ev = e.clone().into_owned();
@@ -121,10 +121,7 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
                                         chunk_count += 1;
 
                                         println!("- {}", hash);
-                                        if filter_element.trim().is_empty() {
-                                            break;
-                                        }
-                                        break 'outer;
+                                        
                                     }
                                 }
                             }
