@@ -55,7 +55,7 @@ fn main() {
     info!("Using input file: {}", &file_path);
 
     let output_directory = matches.value_of("output_directory").unwrap_or("/tmp");
-    let filter_element = matches.value_of("filter_element").unwrap_or("/tmp");
+    let filter_element = matches.value_of("filter_element").unwrap_or("");
 
     info!("Writing output to: {}", &output_directory);
 
@@ -84,7 +84,7 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
     let mut context_collected = false;
     let mut context: Vec<quick_xml::events::Event> = Vec::new();
 
-    loop {
+    'outer: loop {
         match reader.read_event(&mut buf) {
             Ok(e) => {
                 let ev = e.clone().into_owned();
@@ -107,7 +107,7 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
                                 if attr.key == b"id" {
                                     let v = attr.unescape_and_decode_value(&reader).unwrap();
 
-                                    if v.trim() == filter_element {
+                                    if v.trim().contains(filter_element) {
                                         info!("{}", &v);
                                     
                                         let hash = process_chunk(
@@ -121,6 +121,10 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
                                         chunk_count += 1;
 
                                         println!("- {}", hash);
+                                        if filter_element.trim().is_empty() {
+                                            break;
+                                        }
+                                        break 'outer;
                                     }
                                 }
                             }
