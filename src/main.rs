@@ -36,14 +36,15 @@ fn main() {
             Arg::with_name("filter_element")
                 .short("fe")
                 .long("filter-element")
-                .help("The element that will be processed. Use '*' for partial filtering.")
+                .help("The element that will be processed. Use '*' to process the elements that contain the filter-element.")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("stop_filter_element")
                 .short("sfe")
                 .long("stop filter-element")
-                .help("The element that will be processed. Use '*' for partial filtering. Stops after finding 1 match.")
+                .help("The element that will be processed. Use '*' to process the elements that contain the filter-element. 
+                Stops after finding 1 match.")
                 .takes_value(true),
         )
         .arg(
