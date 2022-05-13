@@ -36,7 +36,14 @@ fn main() {
             Arg::with_name("filter_element")
                 .short("fe")
                 .long("filter-element")
-                .help("The element that will be processed")
+                .help("The element that will be processed. Use '*' for partial filtering.")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("stop_filter_element")
+                .short("sfe")
+                .long("stop filter-element")
+                .help("The element that will be processed. Use '*' for partial filtering. Stops after finding 1 match.")
                 .takes_value(true),
         )
         .arg(
@@ -55,11 +62,18 @@ fn main() {
     info!("Using input file: {}", &file_path);
 
     let output_directory = matches.value_of("output_directory").unwrap_or("/tmp");
-    let filter_element = matches.value_of("filter_element").unwrap_or("");
+    let stop_filter_element = matches.value_of("stop_filter_element").unwrap_or("*");
+    let mut filter_element = matches.value_of("filter_element").unwrap_or("*");
+    let mut quit = false;
 
+    if stop_filter_element.chars().count() > filter_element.chars().count() {
+        filter_element = stop_filter_element;
+        quit = true;
+    }
+    
     info!("Writing output to: {}", &output_directory);
 
-    let result = split_file(file_path, output_directory, filter_element);
+    let result = split_file(file_path, output_directory, filter_element, quit);
 
     match result {
         Ok(chunk_count) => info!("Done splitting into {} chunks", chunk_count),
@@ -67,7 +81,7 @@ fn main() {
     }
 }
 
-fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> Result<i64, String> {
+fn split_file(file_path: &str, output_directory: &str, filter_element: &str, quit: bool) -> Result<i64, String> {
     let mut chunk_count: i64 = 0;
 
     let mut f = File::open(&file_path)
@@ -84,7 +98,7 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
     let mut context_collected = false;
     let mut context: Vec<quick_xml::events::Event> = Vec::new();
 
-    loop {
+    'outer: loop {
         match reader.read_event(&mut buf) {
             Ok(e) => {
                 let ev = e.clone().into_owned();
@@ -106,8 +120,28 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
                             for attr in start_event.attributes().map(|a| a.unwrap()) {
                                 if attr.key == b"id" {
                                     let v = attr.unescape_and_decode_value(&reader).unwrap();
+                                    
+                                    if filter_element.contains("*") {
+                                        if v.trim().contains(&filter_element.replace("*","")) {
+                                            info!("{}", &v);
+                                    
+                                            let hash = process_chunk(
+                                            output_directory,
+                                            &enb_context,
+                                            &mut reader,
+                                            v,
+                                            timestamp,
+                                            )?;
 
-                                    if v.trim().contains(filter_element) {
+                                            chunk_count += 1;
+
+                                            println!("- {}", hash);
+                                            if quit == true{
+                                                break 'outer;
+                                            }
+                                        }   
+                                    }
+                                    else if v.trim() == filter_element {
                                         info!("{}", &v);
                                     
                                         let hash = process_chunk(
@@ -121,7 +155,9 @@ fn split_file(file_path: &str, output_directory: &str, filter_element: &str) -> 
                                         chunk_count += 1;
 
                                         println!("- {}", hash);
-                                        
+                                        if quit == true{
+                                            break 'outer;
+                                        }
                                     }
                                 }
                             }
